@@ -1,0 +1,50 @@
+---
+title: "Shiny show case"
+runtime: shiny
+output: html_document
+---
+
+This is Shiny show case document. I choose to create an interactive simulation aimed to compare exponential distribution function against CLT. 
+
+Plot shows simualted averages with correpsonding normal distribution overlayed.
+
+```{r, echo=FALSE}
+library(ggplot2)
+inputPanel(
+  selectInput("rate", label = "Distribution rate",
+              choices = c(0.5, 0.75, 1, 1.5), selected = 1),
+    
+  selectInput("size", label = "Sample size:",
+              choices = c(10, 20, 50, 100), selected = 20),
+  
+  sliderInput("runs", label = "Simulaiton runs:",
+              min = 1000, max = 10000, value = 1000, step = 1000)
+)
+
+renderPlot({
+  rate <- as.numeric(input$rate)
+  size <- as.numeric(input$size)
+  runs <- as.numeric(input$runs)
+  s2 <- NULL
+  for (i in 1 : input$runs)  # do nosim runs and add rows to data.frame
+    s2 <- rbind(s2, data.frame(mean = mean(rexp(size, rate))))
+  
+  grid <- with(s2, seq(min(mean), max(mean), length = 100))
+  normaldens <- data.frame( 
+    mean = grid,
+    density = dnorm(grid, 1/rate, sqrt((1/rate)/size)) # sample average SE = sqrt(rate/size)
+  )
+  
+  ggplot(s2, aes(x = mean)) + 
+     geom_histogram(alpha = .20, binwidth=.1, col = "grey", aes(y = ..density..)) +
+     geom_line(aes(y = density), data = normaldens, colour = "red") +
+     xlab("sample averages") +
+     ggtitle("Simulated sample averages") +
+     annotate("text", 
+              label = paste("Mean of sample averages:", round(1/rate, 3)), 
+              size=4, color="blue", x=grid[1] * 1.2, y=max(normaldens$density)) +
+     annotate("text", label = paste("Variance of sample averages:", round((1/rate)/size),3), size=4, color="blue", x=grid[1] * 1.2, y=max(normaldens$density) * 0.8)
+    
+
+})
+```
